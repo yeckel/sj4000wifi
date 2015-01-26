@@ -6,6 +6,7 @@
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
 #include <QVideoWidget>
+#include <cameracontroller.h>
 
 namespace Ui {
 class MainWindow;
@@ -33,6 +34,7 @@ private:
     QVideoWidget *mVideoWidget;
     QMediaPlayer *mMediaPlayer;
     QWidget *mVideoContainer;
+    CameraController *cameraController;
 };
 
 #endif // MAINWINDOW_H

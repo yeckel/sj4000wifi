@@ -9,14 +9,21 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    mVideoContainer = new QWidget(ui->videoWidget);
-    mVideoContainer->setStyleSheet("background-color: black;");
+    cameraController = new CameraController(this);
+    mVideoContainer = new QWidget(ui->videoFrame);
+    mVideoContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
     mMediaPlayer = new QMediaPlayer;
     mMediaPlayer->setMedia(QMediaContent(QUrl(videoStreamUrl)));
 
     mVideoWidget = new QVideoWidget(mVideoContainer);
-    mMediaPlayer->setVideoOutput(mVideoWidget);    
+    mVideoWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+    mMediaPlayer->setVideoOutput(mVideoWidget);
+
+    connect(ui->startRecButton,SIGNAL(clicked()), cameraController,SLOT(startRecording()));
+    connect(ui->stopRecButton,SIGNAL(clicked()), cameraController,SLOT(stopRecording()));
+
 }
 
 MainWindow::~MainWindow()
@@ -26,11 +33,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_playButton_clicked()
 {
+    resizeEvent(NULL);
     mMediaPlayer->play();    
 }
 
 void MainWindow::resizeEvent(QResizeEvent *)
 {
-    mVideoContainer->setGeometry(0, 0, ui->videoWidget->width(), ui->videoWidget->height());
+    mVideoContainer->setGeometry(0, 0, ui->videoFrame->width(), ui->videoFrame->height());
     mVideoWidget->setGeometry(0, 0, mVideoContainer->width(), mVideoContainer->height());
 }

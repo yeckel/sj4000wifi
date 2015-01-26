@@ -4,17 +4,19 @@
 #
 #-------------------------------------------------
 
-QT       += core gui multimedia multimediawidgets url
+QT       += core gui multimedia multimediawidgets network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = SJ4000
+TARGET = sj4000wifi
 TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp\
+	cameracontroller.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h\
+	cameracontroller.h
 
 FORMS    += mainwindow.ui
