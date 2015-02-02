@@ -4,10 +4,6 @@
 const QString camera_set_command_url = "http://192.168.1.254/?custom=1&cmd=%1&par=%2";
 const QString camera_get_command_url = "http://192.168.1.254/?custom=1&cmd=%1";
 
-enum command{
-    RECORDING=2001
-};
-
 
 CameraController::CameraController(QObject *parent)
     :QObject(parent)
@@ -18,6 +14,21 @@ CameraController::CameraController(QObject *parent)
 CameraController::~CameraController()
 {
 
+}
+
+void CameraController::isAvailable()
+{
+    sendCommand(CAMERA_MODE);
+}
+
+void CameraController::setCameraMode(Camera_Modes mode)
+{
+    sendCommand(SET_CAMERA_MODE,mode);
+}
+
+void CameraController::batteryStatus()
+{
+    sendCommand(BATTERY_STATUS);
 }
 
 void CameraController::startRecording()
@@ -33,13 +44,12 @@ void CameraController::stopRecording()
 void CameraController::sendCommand(const int command, const int parameter)
 {
     QString request = camera_set_command_url.arg(command).arg(parameter);
-
     sendHttpReq(request);
 }
 
 void CameraController::sendCommand(const int command)
 {
-    QString request = camera_set_command_url.arg(command);
+    QString request = camera_get_command_url.arg(command);
     sendHttpReq(request);
 }
 
@@ -52,12 +62,21 @@ void CameraController::sendHttpReq(const QString &request)
 
 void CameraController::httpFinished()
 {
-
+    if (reply->error()) {
+    }
+    reply->deleteLater();
 }
 
 void CameraController::httpReadyRead()
 {
-    QByteArray data = reply->readAll();
-    qDebug() << data;
+    QByteArray data = reply->readAll();    
+    QDomDocument domDocument;
+    if (!domDocument.setContent(data))
+    {
+        emit cameraError();        
+    }
+    else
+        emit dataFromCamera(data);
+
 }
 

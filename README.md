@@ -21,6 +21,11 @@ curl "http://192.168.1.254/?custom=1&cmd={CommandHere}&par={OptionHere}"
 Data obtained using MITM attack and wireshark:
 ettercap -Tq -i wlan0 -M arp:remote //{LOCAL IP}/ //192.168.1.254/
 
+When in video mode, then the video stream is available at: 554/tcp rtsp
+rtsp://192.168.1.254/sjcam.com
+Foto mode changes the protocol: 8192/tcp mjpeg
+http://192.168.1.254/
+
 All camera commands:
 CMD	Function				Parameter		Output
 1001	Take foto (n foto mode, time foto)	-
@@ -72,7 +77,7 @@ CMD	Function				Parameter		Output
 3024
 3025	Powerline frequency			par=0- 50Hz, 1- 60Hz
 3026	Rotate					par=0- Normal,1 -upside down
-3027
+3027	Random number??							<Value>59620468</Value> Value is changing fast without any reason.
 3028
 3029	Some non working link						http://115.29.201.46:8020/download/filedesc.xml
 3030	FW Filename(not downloadable)					http://192.168.1.254/FW96655A.bin
