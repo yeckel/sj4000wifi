@@ -8,6 +8,7 @@
 #include <QVideoWidget>
 #include <cameracontroller.h>
 #include <QButtonGroup>
+#include <QTimer>
 
 namespace Ui {
 class MainWindow;
@@ -25,9 +26,12 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_playButton_clicked();
-    void on_data_from_camera(QByteArray &data);
+    void on_playButton_clicked();    
     void on_mode_button_toggled(int id, bool b);
+    void cameraMode(Camera_Modes mode);
+    void periodic_check(void);
+
+    void on_actionSet_Date_Time_triggered();
 
 protected:
     void resizeEvent(QResizeEvent *);
@@ -37,9 +41,9 @@ private:
     QVideoWidget *mVideoWidget;
     QMediaPlayer *mMediaPlayer;
     QWidget *mVideoContainer;
-    CameraController *cameraController;
-    void cameraMode(const int mode);
+    CameraController *cameraController;    
     QButtonGroup *mode_group;
+    QTimer *periodic_refresh;
 };
 
 #endif // MAINWINDOW_H

@@ -1,8 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
-#include <QDomDocument>
-#include <QTimer>
 
 static const QString videoStreamUrl = QString("rtsp://192.168.1.254/sjcam.mov");
 static const QString fotoStreamUrl = QString("http://192.168.1.254:8192/");
@@ -24,17 +22,22 @@ MainWindow::MainWindow(QWidget *parent) :
     mVideoContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
     mMediaPlayer = new QMediaPlayer;    
-
     mVideoWidget = new QVideoWidget(mVideoContainer);
     mVideoWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
-
     mMediaPlayer->setVideoOutput(mVideoWidget);
+
+    periodic_refresh = new QTimer(this);
+    periodic_refresh->setInterval(30000); //30s
 
     connect(ui->startRecButton,SIGNAL(clicked()), cameraController,SLOT(startRecording()));
     connect(ui->stopRecButton,SIGNAL(clicked()), cameraController,SLOT(stopRecording()));
 
-    connect(cameraController,SIGNAL(dataFromCamera(QByteArray&)),this,SLOT(on_data_from_camera(QByteArray&)));
+    connect(periodic_refresh,SIGNAL(timeout()),this,SLOT(periodic_check()));
+
     connect(mode_group,SIGNAL(buttonToggled(int,bool)),this,SLOT(on_mode_button_toggled(int,bool)));
+    connect(cameraController,SIGNAL(batteryStatus(int)),ui->batteryBar,SLOT(setValue(int)));
+    connect(cameraController,SIGNAL(cameraModeChanged(Camera_Modes)),this,SLOT(cameraMode(Camera_Modes)));
+    connect(cameraController,SIGNAL(spaceLeft(QString)),ui->labelSpaceLeft,SLOT(setText(QString)));
 
 }
 
@@ -47,54 +50,8 @@ void MainWindow::on_playButton_clicked()
 {
     resizeEvent(NULL);
     cameraController->isAvailable();
-    //cameraController->batteryStatus();
+    periodic_check();
 
-}
-
-void MainWindow::on_data_from_camera(QByteArray &data)
-{    
-    QDomDocument xml_data;
-    xml_data.setContent(data);
-    qDebug() << data;
-    QDomElement root = xml_data.documentElement();
-    QDomNodeList cmds = root.elementsByTagName("Cmd");
-    QDomNodeList statueses = root.elementsByTagName("Status");
-    QDomNodeList values = root.elementsByTagName("Value");
-    qDebug() << cmds.count();
-    if (cmds.count() == 1 && statueses.count() == 1)
-    {
-        int cmd = cmds.at(0).firstChild().nodeValue().toInt();
-        int status = statueses.at(0).firstChild().nodeValue().toInt();
-        int value = values.at(0).firstChild().nodeValue().toInt();
-        switch (cmd) {
-        case CAMERA_MODE:
-                cameraMode(status);
-            break;
-        case BATTERY_STATUS:
-                ui->batteryBar->setValue(value*100/5);
-            break;
-        case BYTES_LEFT:
-            break;
-        case SET_CAMERA_MODE:
-            if (status == STATUS_OK){
-                QEventLoop loop;
-                QTimer::singleShot(500, &loop, SLOT(quit()));
-                loop.exec();
-                cameraController->isAvailable();
-            }
-            break;
-        default:
-            break;
-        }
-    }
-    else if(cmds.count() == 25 && statueses.count() == 25)
-    {
-        //answer to req CAMERA_STATUS - get settings
-    }
-    else
-    {
-        //an error??
-    }   
 }
 
 void MainWindow::on_mode_button_toggled(int id, bool b)
@@ -111,34 +68,53 @@ void MainWindow::resizeEvent(QResizeEvent *)
     mVideoWidget->setGeometry(0, 0, mVideoContainer->width(), mVideoContainer->height());
 }
 
-void MainWindow::cameraMode(const int mode)
+void MainWindow::cameraMode(Camera_Modes mode)
 {
 
     QUrl streamUrl;
-    mode_group->blockSignals(true);
+    mode_group->blockSignals(true);    
     switch (mode) {
     case MODE_VIDEO:
             ui->radioButtonVideo->setChecked(true);
+            ui->labelStart->setText(tr("Video Recording"));
+            ui->stopRecButton->setEnabled(true);
             streamUrl.setUrl(videoStreamUrl);
         break;
     case MODE_FOTO:
             ui->radioButtonFoto->setChecked(true);
+            ui->labelStart->setText(tr("Foto Shooting"));
+            ui->stopRecButton->setEnabled(false);
             streamUrl.setUrl(fotoStreamUrl);
         break;
     case MODE_TIMED_FOTO:
             ui->radioButtonTFoto->setChecked(true);
+            ui->labelStart->setText(tr("Foto Shooting"));
+            ui->stopRecButton->setEnabled(true);
             streamUrl.setUrl(fotoStreamUrl);
         break;
     case MODE_TIMED_VIDEO:
             ui->radioButtonTVideo->setChecked(true);
+            ui->labelStart->setText(tr("Video Recording"));
+            ui->stopRecButton->setEnabled(true);
             streamUrl.setUrl(videoStreamUrl);
         break;
     default:
         return;
         break;
     }
-
+    periodic_refresh->start();
     mMediaPlayer->setMedia(QMediaContent(streamUrl));
     mode_group->blockSignals(false);
     mMediaPlayer->play();
+}
+
+void MainWindow::periodic_check()
+{
+    cameraController->getBatteryStatus();
+    cameraController->freeSpaceLeft();
+}
+
+void MainWindow::on_actionSet_Date_Time_triggered()
+{
+    cameraController->setDateTime();
 }
